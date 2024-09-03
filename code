@@ -1,0 +1,121 @@
+#include <WiFi.h>
+#include <ThingsBoard.h>
+#include <PubSubClient.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+#include  <ESP32Servo.h>
+Servo servo1;
+#define I2C_SDA 21
+#define I2C_SCL 22
+const int trigPin1 = 33;
+const int echoPin1 = 34;
+const int trigPin2 = 18;
+const int echoPin2 = 19;
+
+long duration1;
+int distance1;
+long duration2;
+int distance2;
+
+WiFiClient wifiClient;
+ThingsBoard tb(wifiClient);
+
+const char* ssid = "Gurpreet singh";
+const char* password = "Gurpreet";
+const char* tbHost = "demo.thingsboard.io";
+const char* tbToken = "JMlMDHYiHeWZliD7xn3p";
+
+void setup() 
+{
+ 
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  servo1.attach(4);
+   lcd.backlight();
+  lcd.init();
+  Serial.begin(115200);
+   Serial.println("Connecting to Wi-Fi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to Wi-Fi...");
+  }
+
+  Serial.println("Connected to Wi-Fi");
+  Serial.println("Connecting to ThingsBoard...");
+
+  if (!tb.connect(tbHost, tbToken)) {
+    Serial.println("Failed to connect to ThingsBoard");
+    while (1);
+  }
+  Serial.println("Connected to ThingsBoard");
+  
+
+
+ 
+  Serial.begin(115200);
+}
+
+void loop() 
+{
+
+  digitalWrite(trigPin1, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin1, LOW);
+  duration1 = pulseIn(echoPin1, HIGH);
+  distance1 = (duration1) * 0.034 / 2;  
+  
+   if (distance1 > 5 ){
+  servo1.write(0);
+  delay(1000);
+  }
+ else
+  {
+   servo1.write(90);
+  delay(1000);
+ }
+  Serial.print("obstacle Value=");
+  Serial.print(distance1);
+  Serial.println(" cm");
+  
+  digitalWrite(trigPin2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin2, LOW);
+  duration2 = pulseIn(echoPin2, HIGH);
+  distance2 = (duration2) * 0.034 / 2;  
+  
+
+ 
+  
+  Serial.print("Tank Value=");
+  Serial.print(distance2);
+  Serial.println(" cm");
+
+
+   lcd.setCursor(0,0);
+   lcd.print("obstacle Value=");
+   lcd.print(distance1);
+   lcd.print("cm");
+   delay(2000);
+   
+
+  
+   lcd.setCursor(0,0);
+   lcd.print("Tank Value =");
+   lcd.print(distance2);
+   lcd.print("cm");
+   delay(2000);
+
+   
+  
+    
+     tb.sendTelemetryFloat("obstacle Value =", distance1);
+     tb.sendTelemetryFloat("Tank Value =", distance2);
+  
+  }
